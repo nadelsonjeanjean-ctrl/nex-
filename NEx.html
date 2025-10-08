@@ -1,2 +1,1554 @@
-# nex-
-sofware para quimica
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visualizador de Moléculas 3D - NADELSON CEMELIA</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0f1b33, #1a3a5f, #2c5f8a);
+            color: white;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            padding: 30px 0;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4, #feca57);
+        }
+
+        .creator-badge {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        h1 {
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            background: linear-gradient(90deg, #ff9a9e, #fad0c4, #fad0c4, #a1c4fd);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            max-width: 800px;
+            margin: 0 auto;
+            line-height: 1.5;
+        }
+
+        .main-content {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .visualization-section {
+            flex: 2;
+            min-width: 500px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .controls-section {
+            flex: 1;
+            min-width: 350px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+            display: flex;
+            flex-direction: column;
+            max-height: 800px;
+            overflow-y: auto;
+        }
+
+        .molecule-selector {
+            margin-bottom: 25px;
+        }
+
+        .molecule-selector h2 {
+            margin-bottom: 15px;
+            font-size: 1.5rem;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+            padding-bottom: 8px;
+            display: flex;
+            align-items: center;
+        }
+
+        .molecule-selector h2::before {
+            content: '⚗️';
+            margin-right: 10px;
+        }
+
+        .molecule-search {
+            margin-bottom: 15px;
+        }
+
+        .molecule-search input {
+            width: 100%;
+            padding: 12px 15px;
+            border-radius: 8px;
+            border: none;
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+            font-size: 1rem;
+        }
+
+        .molecule-search input::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .molecule-categories {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .category-btn {
+            background: rgba(255, 255, 255, 0.15);
+            border: none;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .category-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        .category-btn.active {
+            background: rgba(103, 58, 183, 0.7);
+            box-shadow: 0 5px 15px rgba(103, 58, 183, 0.4);
+        }
+
+        .molecule-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            padding: 5px;
+        }
+
+        .molecule-btn {
+            background: rgba(255, 255, 255, 0.15);
+            border: none;
+            color: white;
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .molecule-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: translateY(-3px);
+        }
+
+        .molecule-btn.active {
+            background: rgba(103, 58, 183, 0.7);
+            box-shadow: 0 5px 15px rgba(103, 58, 183, 0.4);
+        }
+
+        .molecule-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .molecule-formula {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        .molecule-info {
+            margin-top: 25px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            flex-grow: 1;
+        }
+
+        .molecule-info h3 {
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+            display: flex;
+            align-items: center;
+        }
+
+        .molecule-info h3::before {
+            content: 'ℹ️';
+            margin-right: 10px;
+        }
+
+        .molecule-info p {
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+
+        .atom-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .atom-item {
+            display: flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 0.9rem;
+        }
+
+        .atom-color {
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .view-controls {
+            margin-top: 25px;
+        }
+
+        .view-controls h2 {
+            margin-bottom: 15px;
+            font-size: 1.5rem;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+            padding-bottom: 8px;
+            display: flex;
+            align-items: center;
+        }
+
+        .view-controls h2::before {
+            content: '👁️';
+            margin-right: 10px;
+        }
+
+        .control-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .control-btn {
+            background: rgba(255, 255, 255, 0.15);
+            border: none;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            flex: 1;
+            min-width: 120px;
+            text-align: center;
+        }
+
+        .control-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        .control-btn.active {
+            background: rgba(33, 150, 243, 0.7);
+            box-shadow: 0 5px 15px rgba(33, 150, 243, 0.4);
+        }
+
+        .slider-control {
+            margin-top: 15px;
+        }
+
+        .slider-control label {
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .slider-control input {
+            width: 100%;
+        }
+
+        #molecule-container {
+            width: 100%;
+            height: 500px;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            background: rgba(0, 0, 0, 0.2);
+            flex-grow: 1;
+            position: relative;
+        }
+
+        .distance-info {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 0.9rem;
+            z-index: 10;
+        }
+
+        .molecule-stats {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 15px;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 10px 15px;
+            border-radius: 8px;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            opacity: 0.8;
+        }
+
+        .periodic-table-btn {
+            background: rgba(255, 215, 0, 0.3);
+            border: none;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 15px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .periodic-table-btn:hover {
+            background: rgba(255, 215, 0, 0.5);
+        }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            margin-top: 30px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        .creator-highlight {
+            font-weight: bold;
+            color: #4ecdc4;
+            font-size: 1.1rem;
+        }
+
+        @media (max-width: 1100px) {
+            .main-content {
+                flex-direction: column;
+            }
+            
+            .visualization-section, .controls-section {
+                min-width: 100%;
+            }
+            
+            h1 {
+                font-size: 2.2rem;
+            }
+            
+            .creator-badge {
+                position: static;
+                margin-bottom: 15px;
+                display: inline-block;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .molecule-buttons {
+                grid-template-columns: 1fr;
+            }
+            
+            .control-buttons {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="creator-badge">Creado por: <span class="creator-highlight">NADELSON CEMELIA</span></div>
+            <h1>Visualizador de Moléculas 3D</h1>
+            <p class="subtitle">Explora la estructura atómica de compuestos químicos con representaciones precisas en 3D. Herramienta educativa desarrollada para facilitar el aprendizaje de la química.</p>
+        </header>
+
+        <div class="main-content">
+            <section class="visualization-section">
+                <div id="molecule-container">
+                    <div class="distance-info" id="distance-info" style="display: none;">
+                        Distancia entre átomos: <span id="distance-value">0</span> Å
+                    </div>
+                </div>
+                <div class="molecule-stats">
+                    <div class="stat">
+                        <div class="stat-value" id="atom-count">0</div>
+                        <div class="stat-label">Átomos</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value" id="bond-count">0</div>
+                        <div class="stat-label">Enlaces</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value" id="molar-mass">0 g/mol</div>
+                        <div class="stat-label">Masa Molar</div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="controls-section">
+                <div class="molecule-selector">
+                    <h2>Biblioteca de Moléculas</h2>
+                    
+                    <div class="molecule-search">
+                        <input type="text" id="molecule-search" placeholder="Buscar molécula...">
+                    </div>
+                    
+                    <div class="molecule-categories">
+                        <button class="category-btn active" data-category="all">Todas</button>
+                        <button class="category-btn" data-category="inorganic">Inorgánicas</button>
+                        <button class="category-btn" data-category="organic">Orgánicas</button>
+                        <button class="category-btn" data-category="biomolecules">Biomoléculas</button>
+                        <button class="category-btn" data-category="acids">Ácidos</button>
+                        <button class="category-btn" data-category="minerals">Minerales</button>
+                    </div>
+                    
+                    <div class="molecule-buttons" id="molecule-buttons-container">
+                        <!-- Las moléculas se cargarán aquí dinámicamente -->
+                    </div>
+
+                    <button class="periodic-table-btn" id="periodic-table-btn">Ver Tabla Periódica</button>
+                </div>
+
+                <div class="molecule-info">
+                    <h3>Información de la Molécula</h3>
+                    <p id="molecule-name"><strong>Nombre:</strong> -</p>
+                    <p id="molecule-formula"><strong>Fórmula:</strong> -</p>
+                    <p id="molecule-category"><strong>Categoría:</strong> -</p>
+                    <p id="molecule-description"><strong>Descripción:</strong> -</p>
+                    
+                    <div class="atom-legend" id="atom-legend">
+                        <!-- Leyenda de átomos se cargará aquí -->
+                    </div>
+                </div>
+
+                <div class="view-controls">
+                    <h2>Controles de Visualización</h2>
+                    <div class="control-buttons">
+                        <button class="control-btn active" data-view="ball-stick">Bolas y Barras</button>
+                        <button class="control-btn" data-view="space-filling">Espacio Ocupado</button>
+                        <button class="control-btn" data-view="wireframe">Estructura Alámbrica</button>
+                    </div>
+                    
+                    <div class="slider-control">
+                        <label for="rotation-speed">Velocidad de Rotación: <span id="rotation-value">2</span></label>
+                        <input type="range" id="rotation-speed" min="0" max="10" value="2" step="0.1">
+                    </div>
+                    
+                    <div class="slider-control">
+                        <label for="zoom-level">Nivel de Zoom: <span id="zoom-value">5</span></label>
+                        <input type="range" id="zoom-level" min="1" max="10" value="5" step="0.1">
+                    </div>
+
+                    <div class="slider-control">
+                        <label for="bond-thickness">Grosor de Enlaces: <span id="bond-thickness-value">1</span></label>
+                        <input type="range" id="bond-thickness" min="0.5" max="3" value="1" step="0.1">
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <footer>
+            <p>Visualizador de Moléculas 3D - Herramienta educativa creada por <span class="creator-highlight">NADELSON CEMELIA</span> para fines educativos y de investigación.</p>
+            <p>© 2023 NADELSON CEMELIA - Todos los derechos reservados</p>
+        </footer>
+    </div>
+
+    <script>
+        // Variables globales
+        let scene, camera, renderer, controls;
+        let moleculeGroup;
+        let currentMolecule = 'water';
+        let currentView = 'ball-stick';
+        let rotationSpeed = 0.01;
+        let zoomLevel = 5;
+        let bondThickness = 1;
+        let selectedAtoms = [];
+        let distanceLine = null;
+
+        // Base de datos de moléculas expandida
+        const molecules = {
+            // Moléculas inorgánicas
+            'water': {
+                name: 'Agua',
+                formula: 'H₂O',
+                category: 'inorganic',
+                description: 'Compuesto esencial para la vida, formado por dos átomos de hidrógeno y uno de oxígeno. Presenta enlace covalente polar y forma una estructura angular.',
+                atoms: [
+                    { element: 'O', x: 0, y: 0, z: 0 },
+                    { element: 'H', x: 0.757, y: 0.586, z: 0 },
+                    { element: 'H', x: -0.757, y: 0.586, z: 0 }
+                ],
+                bonds: [
+                    { from: 0, to: 1 },
+                    { from: 0, to: 2 }
+                ],
+                molarMass: 18.015
+            },
+            'carbon-dioxide': {
+                name: 'Dióxido de Carbono',
+                formula: 'CO₂',
+                category: 'inorganic',
+                description: 'Gas incoloro presente en la atmósfera. Es lineal y apolar, con enlaces dobles entre el carbono y los oxígenos.',
+                atoms: [
+                    { element: 'C', x: 0, y: 0, z: 0 },
+                    { element: 'O', x: -1.16, y: 0, z: 0 },
+                    { element: 'O', x: 1.16, y: 0, z: 0 }
+                ],
+                bonds: [
+                    { from: 0, to: 1, type: 'double' },
+                    { from: 0, to: 2, type: 'double' }
+                ],
+                molarMass: 44.01
+            },
+            'ammonia': {
+                name: 'Amoníaco',
+                formula: 'NH₃',
+                category: 'inorganic',
+                description: 'Compuesto de nitrógeno e hidrógeno con geometría piramidal trigonal. Es una base débil y se usa en fertilizantes.',
+                atoms: [
+                    { element: 'N', x: 0, y: 0, z: 0 },
+                    { element: 'H', x: 0.602, y: 0.602, z: 0.602 },
+                    { element: 'H', x: -0.602, y: -0.602, z: 0.602 },
+                    { element: 'H', x: 0.602, y: -0.602, z: -0.602 }
+                ],
+                bonds: [
+                    { from: 0, to: 1 },
+                    { from: 0, to: 2 },
+                    { from: 0, to: 3 }
+                ],
+                molarMass: 17.031
+            },
+            'methane': {
+                name: 'Metano',
+                formula: 'CH₄',
+                category: 'organic',
+                description: 'Hidrocarburo más simple, componente principal del gas natural. Tiene geometría tetraédrica y es apolar.',
+                atoms: [
+                    { element: 'C', x: 0, y: 0, z: 0 },
+                    { element: 'H', x: 0.629, y: 0.629, z: 0.629 },
+                    { element: 'H', x: -0.629, y: -0.629, z: 0.629 },
+                    { element: 'H', x: -0.629, y: 0.629, z: -0.629 },
+                    { element: 'H', x: 0.629, y: -0.629, z: -0.629 }
+                ],
+                bonds: [
+                    { from: 0, to: 1 },
+                    { from: 0, to: 2 },
+                    { from: 0, to: 3 },
+                    { from: 0, to: 4 }
+                ],
+                molarMass: 16.04
+            },
+            'ethane': {
+                name: 'Etano',
+                formula: 'C₂H₆',
+                category: 'organic',
+                description: 'Hidrocarburo alcano con dos átomos de carbono. Presenta enlace simple carbono-carbono con rotación libre.',
+                atoms: [
+                    { element: 'C', x: -0.75, y: 0, z: 0 },
+                    { element: 'C', x: 0.75, y: 0, z: 0 },
+                    { element: 'H', x: -1.18, y: 0.89, z: 0 },
+                    { element: 'H', x: -1.18, y: -0.89, z: 0 },
+                    { element: 'H', x: -1.18, y: 0, z: -0.89 },
+                    { element: 'H', x: 1.18, y: 0.89, z: 0 },
+                    { element: 'H', x: 1.18, y: -0.89, z: 0 },
+                    { element: 'H', x: 1.18, y: 0, z: 0.89 }
+                ],
+                bonds: [
+                    { from: 0, to: 1 },
+                    { from: 0, to: 2 },
+                    { from: 0, to: 3 },
+                    { from: 0, to: 4 },
+                    { from: 1, to: 5 },
+                    { from: 1, to: 6 },
+                    { from: 1, to: 7 }
+                ],
+                molarMass: 30.07
+            },
+            'ethene': {
+                name: 'Eteno (Etileno)',
+                formula: 'C₂H₄',
+                category: 'organic',
+                description: 'Hidrocarburo alqueno con doble enlace carbono-carbono. Es plana y se usa en la industria plástica.',
+                atoms: [
+                    { element: 'C', x: -0.67, y: 0, z: 0 },
+                    { element: 'C', x: 0.67, y: 0, z: 0 },
+                    { element: 'H', x: -1.24, y: 0.92, z: 0 },
+                    { element: 'H', x: -1.24, y: -0.92, z: 0 },
+                    { element: 'H', x: 1.24, y: 0.92, z: 0 },
+                    { element: 'H', x: 1.24, y: -0.92, z: 0 }
+                ],
+                bonds: [
+                    { from: 0, to: 1, type: 'double' },
+                    { from: 0, to: 2 },
+                    { from: 0, to: 3 },
+                    { from: 1, to: 4 },
+                    { from: 1, to: 5 }
+                ],
+                molarMass: 28.05
+            },
+            'benzene': {
+                name: 'Benceno',
+                formula: 'C₆H₆',
+                category: 'organic',
+                description: 'Hidrocarburo aromático con estructura de anillo hexagonal. Presenta resonancia entre enlaces simples y dobles.',
+                atoms: [
+                    { element: 'C', x: 0, y: 1.4, z: 0 },
+                    { element: 'C', x: 1.212, y: 0.7, z: 0 },
+                    { element: 'C', x: 1.212, y: -0.7, z: 0 },
+                    { element: 'C', x: 0, y: -1.4, z: 0 },
+                    { element: 'C', x: -1.212, y: -0.7, z: 0 },
+                    { element: 'C', x: -1.212, y: 0.7, z: 0 },
+                    { element: 'H', x: 0, y: 2.48, z: 0 },
+                    { element: 'H', x: 2.14, y: 1.24, z: 0 },
+                    { element: 'H', x: 2.14, y: -1.24, z: 0 },
+                    { element: 'H', x: 0, y: -2.48, z: 0 },
+                    { element: 'H', x: -2.14, y: -1.24, z: 0 },
+                    { element: 'H', x: -2.14, y: 1.24, z: 0 }
+                ],
+                bonds: [
+                    { from: 0, to: 1, type: 'aromatic' },
+                    { from: 1, to: 2, type: 'aromatic' },
+                    { from: 2, to: 3, type: 'aromatic' },
+                    { from: 3, to: 4, type: 'aromatic' },
+                    { from: 4, to: 5, type: 'aromatic' },
+                    { from: 5, to: 0, type: 'aromatic' },
+                    { from: 0, to: 6 },
+                    { from: 1, to: 7 },
+                    { from: 2, to: 8 },
+                    { from: 3, to: 9 },
+                    { from: 4, to: 10 },
+                    { from: 5, to: 11 }
+                ],
+                molarMass: 78.11
+            },
+            'ethanol': {
+                name: 'Etanol',
+                formula: 'C₂H₅OH',
+                category: 'organic',
+                description: 'Alcohol utilizado como disolvente, combustible y en bebidas. Contiene grupo hidroxilo (-OH) unido a cadena carbonada.',
+                atoms: [
+                    { element: 'C', x: 0, y: 0, z: 0 },
+                    { element: 'C', x: 1.54, y: 0, z: 0 },
+                    { element: 'O', x: 2.31, y: 1.07, z: 0 },
+                    { element: 'H', x: -0.51, y: 0.51, z: 0 },
+                    { element: 'H', x: -0.51, y: -0.51, z: 0.87 },
+                    { element: 'H', x: -0.51, y: -0.51, z: -0.87 },
+                    { element: 'H', x: 1.99, y: -0.51, z: 0.87 },
+                    { element: 'H', x: 1.99, y: -0.51, z: -0.87 },
+                    { element: 'H', x: 2.31, y: 1.61, z: -0.87 }
+                ],
+                bonds: [
+                    { from: 0, to: 1 },
+                    { from: 1, to: 2 },
+                    { from: 0, to: 3 },
+                    { from: 0, to: 4 },
+                    { from: 0, to: 5 },
+                    { from: 1, to: 6 },
+                    { from: 1, to: 7 },
+                    { from: 2, to: 8 }
+                ],
+                molarMass: 46.07
+            },
+            'glucose': {
+                name: 'Glucosa',
+                formula: 'C₆H₁₂O₆',
+                category: 'biomolecules',
+                description: 'Azúcar simple (monosacárido) que es fuente principal de energía para los organismos. Presenta estructura cíclica en solución.',
+                atoms: [
+                    { element: 'C', x: 0, y: 0, z: 0 },
+                    { element: 'C', x: 1.42, y: 0, z: 0 },
+                    { element: 'C', x: 2.1, y: 1.23, z: 0 },
+                    { element: 'C', x: 1.42, y: 2.46, z: 0 },
+                    { element: 'C', x: 0, y: 2.46, z: 0 },
+                    { element: 'C', x: -0.68, y: 1.23, z: 0 },
+                    { element: 'O', x: -0.68, y: -1.23, z: 0 },
+                    { element: 'O', x: 2.78, y: 1.23, z: 0 },
+                    { element: 'O', x: 1.42, y: 3.69, z: 0 },
+                    { element: 'H', x: 0.5, y: -0.5, z: 0 },
+                    { element: 'H', x: 1.9, y: -0.5, z: 0 },
+                    { element: 'H', x: 2.6, y: 1.73, z: 0 },
+                    { element: 'H', x: 1.9, y: 2.96, z: 0 },
+                    { element: 'H', x: -0.5, y: 2.96, z: 0 },
+                    { element: 'H', x: -1.18, y: 1.73, z: 0 },
+                    { element: 'H', x: -1.18, y: -1.73, z: 0 },
+                    { element: 'H', x: 3.28, y: 1.73, z: 0 },
+                    { element: 'H', x: 1.9, y: 4.19, z: 0 }
+                ],
+                bonds: [
+                    { from: 0, to: 1 }, { from: 1, to: 2 }, { from: 2, to: 3 },
+                    { from: 3, to: 4 }, { from: 4, to: 5 }, { from: 5, to: 0 },
+                    { from: 0, to: 6 }, { from: 2, to: 7 }, { from: 3, to: 8 },
+                    { from: 0, to: 9 }, { from: 1, to: 10 }, { from: 2, to: 11 },
+                    { from: 3, to: 12 }, { from: 4, to: 13 }, { from: 5, to: 14 },
+                    { from: 6, to: 15 }, { from: 7, to: 16 }, { from: 8, to: 17 }
+                ],
+                molarMass: 180.16
+            },
+            'sulfuric-acid': {
+                name: 'Ácido Sulfúrico',
+                formula: 'H₂SO₄',
+                category: 'acids',
+                description: 'Ácido mineral fuerte, ampliamente utilizado en la industria. Presenta estructura tetraédrica alrededor del azufre.',
+                atoms: [
+                    { element: 'S', x: 0, y: 0, z: 0 },
+                    { element: 'O', x: 0, y: 1.43, z: 0 },
+                    { element: 'O', x: 1.23, y: -0.72, z: 0 },
+                    { element: 'O', x: -1.23, y: -0.72, z: 0 },
+                    { element: 'O', x: 0, y: 0, z: 1.43 },
+                    { element: 'H', x: 0, y: 1.93, z: 0.87 },
+                    { element: 'H', x: 0, y: 1.93, z: -0.87 },
+                    { element: 'H', x: 1.73, y: -1.22, z: 0 },
+                    { element: 'H', x: -1.73, y: -1.22, z: 0 }
+                ],
+                bonds: [
+                    { from: 0, to: 1 }, { from: 0, to: 2 }, { from: 0, to: 3 },
+                    { from: 0, to: 4 }, { from: 1, to: 5 }, { from: 1, to: 6 },
+                    { from: 2, to: 7 }, { from: 3, to: 8 }
+                ],
+                molarMass: 98.079
+            },
+            'hydrochloric-acid': {
+                name: 'Ácido Clorhídrico',
+                formula: 'HCl',
+                category: 'acids',
+                description: 'Solución acuosa de cloruro de hidrógeno. En estado gaseoso forma moléculas diatómicas con enlace covalente polar.',
+                atoms: [
+                    { element: 'H', x: 0, y: 0, z: 0 },
+                    { element: 'Cl', x: 1.27, y: 0, z: 0 }
+                ],
+                bonds: [
+                    { from: 0, to: 1 }
+                ],
+                molarMass: 36.46
+            },
+            'sodium-chloride': {
+                name: 'Cloruro de Sodio',
+                formula: 'NaCl',
+                category: 'inorganic',
+                description: 'Sal iónica formada por iones sodio y cloro. En estado sólido forma una estructura cristalina cúbica.',
+                atoms: [
+                    { element: 'Na', x: 0, y: 0, z: 0 },
+                    { element: 'Cl', x: 2.82, y: 0, z: 0 },
+                    { element: 'Na', x: 0, y: 2.82, z: 0 },
+                    { element: 'Cl', x: 2.82, y: 2.82, z: 0 }
+                ],
+                bonds: [
+                    { from: 0, to: 1, type: 'ionic' },
+                    { from: 0, to: 2, type: 'ionic' },
+                    { from: 1, to: 3, type: 'ionic' },
+                    { from: 2, to: 3, type: 'ionic' }
+                ],
+                molarMass: 58.44
+            },
+            'oxygen': {
+                name: 'Oxígeno Molecular',
+                formula: 'O₂',
+                category: 'inorganic',
+                description: 'Gas esencial para la respiración. Presenta enlace doble y es paramagnético debido a sus electrones desapareados.',
+                atoms: [
+                    { element: 'O', x: -0.6, y: 0, z: 0 },
+                    { element: 'O', x: 0.6, y: 0, z: 0 }
+                ],
+                bonds: [
+                    { from: 0, to: 1, type: 'double' }
+                ],
+                molarMass: 32.0
+            },
+            'nitrogen': {
+                name: 'Nitrógeno Molecular',
+                formula: 'N₂',
+                category: 'inorganic',
+                description: 'Gas que constituye el 78% del aire. Presenta enlace triple, uno de los más fuertes conocidos.',
+                atoms: [
+                    { element: 'N', x: -0.55, y: 0, z: 0 },
+                    { element: 'N', x: 0.55, y: 0, z: 0 }
+                ],
+                bonds: [
+                    { from: 0, to: 1, type: 'triple' }
+                ],
+                molarMass: 28.02
+            },
+            'ozone': {
+                name: 'Ozono',
+                formula: 'O₃',
+                category: 'inorganic',
+                description: 'Forma alotrópica del oxígeno con tres átomos. Presenta resonancia entre estructuras con enlaces simples y dobles.',
+                atoms: [
+                    { element: 'O', x: -1.16, y: 0, z: 0 },
+                    { element: 'O', x: 0, y: 0, z: 0 },
+                    { element: 'O', x: 1.16, y: 0, z: 0 }
+                ],
+                bonds: [
+                    { from: 0, to: 1, type: 'resonant' },
+                    { from: 1, to: 2, type: 'resonant' }
+                ],
+                molarMass: 48.0
+            },
+            'carbon-monoxide': {
+                name: 'Monóxido de Carbono',
+                formula: 'CO',
+                category: 'inorganic',
+                description: 'Gas tóxico incoloro e inodoro. Presenta enlace triple con momento dipolar pequeño.',
+                atoms: [
+                    { element: 'C', x: -0.57, y: 0, z: 0 },
+                    { element: 'O', x: 0.57, y: 0, z: 0 }
+                ],
+                bonds: [
+                    { from: 0, to: 1, type: 'triple' }
+                ],
+                molarMass: 28.01
+            },
+            'acetylene': {
+                name: 'Acetileno',
+                formula: 'C₂H₂',
+                category: 'organic',
+                description: 'Hidrocarburo alquino con triple enlace carbono-carbono. Se usa en soldadura y como precursor químico.',
+                atoms: [
+                    { element: 'C', x: -0.6, y: 0, z: 0 },
+                    { element: 'C', x: 0.6, y: 0, z: 0 },
+                    { element: 'H', x: -1.66, y: 0, z: 0 },
+                    { element: 'H', x: 1.66, y: 0, z: 0 }
+                ],
+                bonds: [
+                    { from: 0, to: 1, type: 'triple' },
+                    { from: 0, to: 2 },
+                    { from: 1, to: 3 }
+                ],
+                molarMass: 26.04
+            },
+            'acetic-acid': {
+                name: 'Ácido Acético',
+                formula: 'CH₃COOH',
+                category: 'acids',
+                description: 'Componente principal del vinagre. Contiene grupo carboxilo que le confiere propiedades ácidas.',
+                atoms: [
+                    { element: 'C', x: 0, y: 0, z: 0 },
+                    { element: 'C', x: 1.54, y: 0, z: 0 },
+                    { element: 'O', x: 2.31, y: 1.07, z: 0 },
+                    { element: 'O', x: 2.31, y: -1.07, z: 0 },
+                    { element: 'H', x: -0.51, y: 0.51, z: 0 },
+                    { element: 'H', x: -0.51, y: -0.51, z: 0.87 },
+                    { element: 'H', x: -0.51, y: -0.51, z: -0.87 },
+                    { element: 'H', x: 1.99, y: -0.51, z: 0.87 },
+                    { element: 'H', x: 1.99, y: -0.51, z: -0.87 },
+                    { element: 'H', x: 2.31, y: 1.61, z: -0.87 }
+                ],
+                bonds: [
+                    { from: 0, to: 1 },
+                    { from: 1, to: 2, type: 'double' },
+                    { from: 1, to: 3 },
+                    { from: 0, to: 4 },
+                    { from: 0, to: 5 },
+                    { from: 0, to: 6 },
+                    { from: 3, to: 7 },
+                    { from: 3, to: 8 },
+                    { from: 2, to: 9 }
+                ],
+                molarMass: 60.05
+            },
+            'aspirin': {
+                name: 'Ácido Acetilsalicílico',
+                formula: 'C₉H₈O₄',
+                category: 'organic',
+                description: 'Medicamento analgésico y antiinflamatorio. Contiene grupos funcionales éster y ácido carboxílico.',
+                atoms: [
+                    // Estructura simplificada del anillo bencénico
+                    { element: 'C', x: 0, y: 1.4, z: 0 },
+                    { element: 'C', x: 1.212, y: 0.7, z: 0 },
+                    { element: 'C', x: 1.212, y: -0.7, z: 0 },
+                    { element: 'C', x: 0, y: -1.4, z: 0 },
+                    { element: 'C', x: -1.212, y: -0.7, z: 0 },
+                    { element: 'C', x: -1.212, y: 0.7, z: 0 },
+                    // Grupo carboxilo
+                    { element: 'C', x: 2.424, y: 1.4, z: 0 },
+                    { element: 'O', x: 2.424, y: 2.5, z: 0 },
+                    { element: 'O', x: 3.636, y: 0.7, z: 0 },
+                    { element: 'H', x: 3.636, y: -0.4, z: 0 },
+                    // Grupo éster
+                    { element: 'C', x: -2.424, y: 1.4, z: 0 },
+                    { element: 'O', x: -2.424, y: 2.5, z: 0 },
+                    { element: 'C', x: -3.636, y: 0.7, z: 0 },
+                    { element: 'O', x: -4.848, y: 1.4, z: 0 },
+                    // Hidrógenos (simplificados)
+                    { element: 'H', x: 0, y: 2.48, z: 0 },
+                    { element: 'H', x: 2.14, y: -1.24, z: 0 },
+                    { element: 'H', x: 0, y: -2.48, z: 0 },
+                    { element: 'H', x: -2.14, y: -1.24, z: 0 },
+                    { element: 'H', x: -3.636, y: -0.4, z: 0 },
+                    { element: 'H', x: -4.848, y: 2.48, z: 0 },
+                    { element: 'H', x: -5.96, y: 1.4, z: 0 }
+                ],
+                bonds: [
+                    // Anillo bencénico
+                    { from: 0, to: 1, type: 'aromatic' },
+                    { from: 1, to: 2, type: 'aromatic' },
+                    { from: 2, to: 3, type: 'aromatic' },
+                    { from: 3, to: 4, type: 'aromatic' },
+                    { from: 4, to: 5, type: 'aromatic' },
+                    { from: 5, to: 0, type: 'aromatic' },
+                    // Grupo carboxilo
+                    { from: 1, to: 6 },
+                    { from: 6, to: 7, type: 'double' },
+                    { from: 6, to: 8 },
+                    { from: 8, to: 9 },
+                    // Grupo éster
+                    { from: 5, to: 10 },
+                    { from: 10, to: 11 },
+                    { from: 10, to: 12 },
+                    { from: 12, to: 13 },
+                    // Hidrógenos
+                    { from: 0, to: 14 },
+                    { from: 2, to: 15 },
+                    { from: 3, to: 16 },
+                    { from: 4, to: 17 },
+                    { from: 12, to: 18 },
+                    { from: 13, to: 19 },
+                    { from: 13, to: 20 }
+                ],
+                molarMass: 180.16
+            },
+            'caffeine': {
+                name: 'Cafeína',
+                formula: 'C₈H₁₀N₄O₂',
+                category: 'organic',
+                description: 'Alcaloide estimulante del sistema nervioso central. Presente en el café, té y bebidas energéticas.',
+                atoms: [
+                    // Estructura simplificada de la cafeína
+                    { element: 'C', x: 0, y: 0, z: 0 },
+                    { element: 'N', x: 1.2, y: 0, z: 0 },
+                    { element: 'C', x: 2.0, y: 1.0, z: 0 },
+                    { element: 'N', x: 1.2, y: 2.0, z: 0 },
+                    { element: 'C', x: 0, y: 2.0, z: 0 },
+                    { element: 'N', x: -1.2, y: 2.0, z: 0 },
+                    { element: 'C', x: -2.0, y: 1.0, z: 0 },
+                    { element: 'N', x: -1.2, y: 0, z: 0 },
+                    { element: 'C', x: 0, y: 3.2, z: 0 },
+                    { element: 'O', x: 2.8, y: 1.0, z: 0 },
+                    { element: 'O', x: -2.8, y: 1.0, z: 0 },
+                    // Hidrógenos y grupos metilo (simplificados)
+                    { element: 'C', x: 0.8, y: -1.0, z: 0 },
+                    { element: 'C', x: -0.8, y: -1.0, z: 0 },
+                    { element: 'C', x: 1.2, y: 3.8, z: 0 },
+                    { element: 'H', x: 1.4, y: -1.0, z: 0 },
+                    { element: 'H', x: 0.4, y: -1.8, z: 0 },
+                    { element: 'H', x: 0.4, y: -0.2, z: 0 },
+                    { element: 'H', x: -1.4, y: -1.0, z: 0 },
+                    { element: 'H', x: -0.4, y: -1.8, z: 0 },
+                    { element: 'H', x: -0.4, y: -0.2, z: 0 },
+                    { element: 'H', x: 1.8, y: 3.8, z: 0 },
+                    { element: 'H', x: 0.8, y: 4.6, z: 0 },
+                    { element: 'H', x: 0.6, y: 3.8, z: 0 }
+                ],
+                bonds: [
+                    // Anillo principal
+                    { from: 0, to: 1 }, { from: 1, to: 2 }, { from: 2, to: 3 },
+                    { from: 3, to: 4 }, { from: 4, to: 5 }, { from: 5, to: 6 },
+                    { from: 6, to: 7 }, { from: 7, to: 0 },
+                    // Grupos adicionales
+                    { from: 4, to: 8 }, { from: 2, to: 9 }, { from: 6, to: 10 },
+                    { from: 1, to: 11 }, { from: 7, to: 12 }, { from: 8, to: 13 },
+                    // Enlaces con hidrógenos (simplificados)
+                    { from: 11, to: 14 }, { from: 11, to: 15 }, { from: 11, to: 16 },
+                    { from: 12, to: 17 }, { from: 12, to: 18 }, { from: 12, to: 19 },
+                    { from: 13, to: 20 }, { from: 13, to: 21 }, { from: 13, to: 22 }
+                ],
+                molarMass: 194.19
+            },
+            'quartz': {
+                name: 'Cuarzo (SiO₂)',
+                formula: 'SiO₂',
+                category: 'minerals',
+                description: 'Mineral compuesto de dióxido de silicio. Presenta estructura cristalina formando tetraedros SiO₄.',
+                atoms: [
+                    { element: 'Si', x: 0, y: 0, z: 0 },
+                    { element: 'O', x: 1.61, y: 0, z: 0 },
+                    { element: 'O', x: -0.54, y: 1.52, z: 0 },
+                    { element: 'O', x: -0.54, y: -0.95, z: 1.32 },
+                    { element: 'O', x: -0.54, y: -0.95, z: -1.32 },
+                    { element: 'Si', x: 2.15, y: 1.52, z: 0 },
+                    { element: 'Si', x: 2.15, y: -0.95, z: 1.32 },
+                    { element: 'Si', x: 2.15, y: -0.95, z: -1.32 }
+                ],
+                bonds: [
+                    { from: 0, to: 1 }, { from: 0, to: 2 }, { from: 0, to: 3 }, { from: 0, to: 4 },
+                    { from: 1, to: 5 }, { from: 2, to: 5 }, { from: 3, to: 6 }, { from: 4, to: 7 }
+                ],
+                molarMass: 60.08
+            },
+            'calcite': {
+                name: 'Calcita (CaCO₃)',
+                formula: 'CaCO₃',
+                category: 'minerals',
+                description: 'Mineral de carbonato de calcio. Es el principal componente de rocas como la caliza y el mármol.',
+                atoms: [
+                    { element: 'Ca', x: 0, y: 0, z: 0 },
+                    { element: 'C', x: 2.04, y: 0, z: 0 },
+                    { element: 'O', x: 2.79, y: 1.16, z: 0 },
+                    { element: 'O', x: 2.79, y: -0.58, z: 1 },
+                    { element: 'O', x: 2.79, y: -0.58, z: -1 },
+                    { element: 'Ca', x: 4.08, y: 0, z: 0 }
+                ],
+                bonds: [
+                    { from: 0, to: 1 }, { from: 1, to: 2 }, { from: 1, to: 3 }, { from: 1, to: 4 },
+                    { from: 2, to: 5 }, { from: 3, to: 5 }, { from: 4, to: 5 }
+                ],
+                molarMass: 100.09
+            }
+        };
+
+        // Colores para los átomos (convención CPK expandida)
+        const atomColors = {
+            'H': 0xFFFFFF,  // Blanco
+            'C': 0x333333,  // Negro
+            'O': 0xFF0000,  // Rojo
+            'N': 0x0000FF,  // Azul
+            'Cl': 0x00FF00, // Verde
+            'Na': 0x0000FF, // Azul
+            'S': 0xFFFF00,  // Amarillo
+            'P': 0xFF8000,  // Naranja
+            'F': 0x90EE90,  // Verde claro
+            'Br': 0xA52A2A, // Marrón
+            'I': 0x9400D3,  // Violeta
+            'He': 0xD9FFFF, // Celeste
+            'Li': 0xCC80FF, // Lila
+            'Be': 0xC2FF00, // Verde lima
+            'B': 0xFFB5B5,  // Rosa
+            'Si': 0xF0C8A0, // Beige
+            'Ca': 0x3DFF00  // Verde brillante
+        };
+
+        // Tamaños de los átomos (radios atómicos en Angstroms)
+        const atomSizes = {
+            'H': 0.3,
+            'C': 0.7,
+            'O': 0.66,
+            'N': 0.65,
+            'Cl': 1.0,
+            'Na': 1.0,
+            'S': 1.0,
+            'P': 1.0,
+            'F': 0.6,
+            'Br': 1.2,
+            'I': 1.4,
+            'He': 0.3,
+            'Li': 1.3,
+            'Be': 1.0,
+            'B': 0.8,
+            'Si': 1.1,
+            'Ca': 1.8
+        };
+
+        // Nombres de elementos
+        const elementNames = {
+            'H': 'Hidrógeno',
+            'C': 'Carbono',
+            'O': 'Oxígeno',
+            'N': 'Nitrógeno',
+            'Cl': 'Cloro',
+            'Na': 'Sodio',
+            'S': 'Azufre',
+            'P': 'Fósforo',
+            'F': 'Flúor',
+            'Br': 'Bromo',
+            'I': 'Yodo',
+            'He': 'Helio',
+            'Li': 'Litio',
+            'Be': 'Berilio',
+            'B': 'Boro',
+            'Si': 'Silicio',
+            'Ca': 'Calcio'
+        };
+
+        // Inicialización
+        function init() {
+            // Crear escena
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0c0c2c);
+
+            // Crear cámara
+            camera = new THREE.PerspectiveCamera(75, 
+                document.getElementById('molecule-container').clientWidth / 
+                document.getElementById('molecule-container').clientHeight, 
+                0.1, 1000);
+            camera.position.z = 5;
+
+            // Crear renderizador
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(
+                document.getElementById('molecule-container').clientWidth,
+                document.getElementById('molecule-container').clientHeight
+            );
+            document.getElementById('molecule-container').appendChild(renderer.domElement);
+
+            // Controles de órbita
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+
+            // Iluminación
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(5, 10, 7);
+            scene.add(directionalLight);
+
+            // Grupo para la molécula
+            moleculeGroup = new THREE.Group();
+            scene.add(moleculeGroup);
+
+            // Cargar molécula inicial
+            loadMolecule(currentMolecule);
+
+            // Inicializar interfaz
+            initializeUI();
+
+            // Ajustar tamaño al cambiar ventana
+            window.addEventListener('resize', onWindowResize);
+
+            // Iniciar animación
+            animate();
+        }
+
+        // Cargar molécula
+        function loadMolecule(moleculeType) {
+            // Limpiar molécula anterior
+            while(moleculeGroup.children.length > 0) {
+                moleculeGroup.remove(moleculeGroup.children[0]);
+            }
+
+            // Limpiar selección de átomos
+            selectedAtoms = [];
+            document.getElementById('distance-info').style.display = 'none';
+
+            const molecule = molecules[moleculeType];
+            if (!molecule) return;
+
+            // Crear átomos
+            molecule.atoms.forEach((atom, index) => {
+                const geometry = new THREE.SphereGeometry(atomSizes[atom.element], 32, 32);
+                const material = new THREE.MeshPhongMaterial({ 
+                    color: atomColors[atom.element],
+                    shininess: 30
+                });
+                const sphere = new THREE.Mesh(geometry, material);
+                sphere.position.set(atom.x, atom.y, atom.z);
+                sphere.userData = { atomIndex: index, element: atom.element };
+                
+                // Hacer los átomos seleccionables
+                sphere.userData.selectable = true;
+                
+                moleculeGroup.add(sphere);
+            });
+
+            // Crear enlaces
+            molecule.bonds.forEach(bond => {
+                const atom1 = molecule.atoms[bond.from];
+                const atom2 = molecule.atoms[bond.to];
+                
+                const start = new THREE.Vector3(atom1.x, atom1.y, atom1.z);
+                const end = new THREE.Vector3(atom2.x, atom2.y, atom2.z);
+                
+                const distance = start.distanceTo(end);
+                const direction = new THREE.Vector3().subVectors(end, start).normalize();
+                
+                // Determinar grosor según tipo de enlace
+                let radius = 0.1 * bondThickness;
+                let color = 0xCCCCCC;
+                
+                if (bond.type === 'double') {
+                    radius = 0.08 * bondThickness;
+                    color = 0xAAAAAA;
+                } else if (bond.type === 'triple') {
+                    radius = 0.06 * bondThickness;
+                    color = 0x888888;
+                } else if (bond.type === 'aromatic' || bond.type === 'resonant') {
+                    radius = 0.09 * bondThickness;
+                    color = 0xDDDDDD;
+                } else if (bond.type === 'ionic') {
+                    radius = 0.12 * bondThickness;
+                    color = 0xFFA500;
+                }
+                
+                const cylinderGeometry = new THREE.CylinderGeometry(radius, radius, distance, 8);
+                const cylinderMaterial = new THREE.MeshPhongMaterial({ color: color });
+                const cylinder = new THREE.Mesh(cylinderGeometry, cylinderMaterial);
+                
+                // Posicionar y orientar el cilindro
+                cylinder.position.copy(start).add(direction.clone().multiplyScalar(distance / 2));
+                cylinder.lookAt(end);
+                cylinder.rotateX(Math.PI / 2);
+                
+                moleculeGroup.add(cylinder);
+            });
+
+            // Actualizar información de la molécula
+            updateMoleculeInfo(moleculeType);
+            
+            // Actualizar estadísticas
+            updateMoleculeStats(molecule);
+        }
+
+        // Actualizar información de la molécula
+        function updateMoleculeInfo(moleculeType) {
+            const molecule = molecules[moleculeType];
+            if (!molecule) return;
+
+            document.getElementById('molecule-name').innerHTML = `<strong>Nombre:</strong> ${molecule.name}`;
+            document.getElementById('molecule-formula').innerHTML = `<strong>Fórmula:</strong> ${molecule.formula}`;
+            document.getElementById('molecule-category').innerHTML = `<strong>Categoría:</strong> ${getCategoryName(molecule.category)}`;
+            document.getElementById('molecule-description').innerHTML = `<strong>Descripción:</strong> ${molecule.description}`;
+            
+            // Actualizar leyenda de átomos
+            updateAtomLegend(molecule);
+        }
+
+        // Actualizar estadísticas de la molécula
+        function updateMoleculeStats(molecule) {
+            document.getElementById('atom-count').textContent = molecule.atoms.length;
+            document.getElementById('bond-count').textContent = molecule.bonds.length;
+            document.getElementById('molar-mass').textContent = molecule.molarMass + ' g/mol';
+        }
+
+        // Actualizar leyenda de átomos
+        function updateAtomLegend(molecule) {
+            const legendContainer = document.getElementById('atom-legend');
+            legendContainer.innerHTML = '';
+            
+            // Obtener elementos únicos en la molécula
+            const elements = [...new Set(molecule.atoms.map(atom => atom.element))];
+            
+            elements.forEach(element => {
+                const atomItem = document.createElement('div');
+                atomItem.className = 'atom-item';
+                
+                const colorBox = document.createElement('div');
+                colorBox.className = 'atom-color';
+                colorBox.style.backgroundColor = `#${atomColors[element].toString(16).padStart(6, '0')}`;
+                
+                const label = document.createElement('span');
+                label.textContent = `${elementNames[element]} (${element})`;
+                
+                atomItem.appendChild(colorBox);
+                atomItem.appendChild(label);
+                legendContainer.appendChild(atomItem);
+            });
+        }
+
+        // Obtener nombre de categoría
+        function getCategoryName(category) {
+            const categoryNames = {
+                'inorganic': 'Inorgánica',
+                'organic': 'Orgánica',
+                'biomolecules': 'Biomolécula',
+                'acids': 'Ácido',
+                'minerals': 'Mineral'
+            };
+            return categoryNames[category] || 'Desconocida';
+        }
+
+        // Inicializar interfaz de usuario
+        function initializeUI() {
+            // Cargar botones de moléculas
+            loadMoleculeButtons();
+            
+            // Configurar búsqueda
+            document.getElementById('molecule-search').addEventListener('input', function() {
+                filterMolecules(this.value);
+            });
+            
+            // Configurar categorías
+            document.querySelectorAll('.category-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    document.querySelectorAll('.category-btn').forEach(btn => {
+                        btn.classList.remove('active');
+                    });
+                    this.classList.add('active');
+                    
+                    const category = this.getAttribute('data-category');
+                    filterMoleculesByCategory(category);
+                });
+            });
+            
+            // Configurar controles de vista
+            document.querySelectorAll('.control-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    document.querySelectorAll('.control-btn').forEach(btn => {
+                        btn.classList.remove('active');
+                    });
+                    this.classList.add('active');
+                    
+                    currentView = this.getAttribute('data-view');
+                    // Aquí se implementaría el cambio de representación visual
+                });
+            });
+            
+            // Control de velocidad de rotación
+            document.getElementById('rotation-speed').addEventListener('input', function() {
+                rotationSpeed = parseFloat(this.value) * 0.005;
+                document.getElementById('rotation-value').textContent = this.value;
+            });
+            
+            // Control de zoom
+            document.getElementById('zoom-level').addEventListener('input', function() {
+                zoomLevel = parseFloat(this.value);
+                camera.position.z = 10 - zoomLevel;
+                document.getElementById('zoom-value').textContent = this.value;
+            });
+            
+            // Control de grosor de enlaces
+            document.getElementById('bond-thickness').addEventListener('input', function() {
+                bondThickness = parseFloat(this.value);
+                document.getElementById('bond-thickness-value').textContent = this.value;
+                // Recargar la molécula para aplicar el nuevo grosor
+                loadMolecule(currentMolecule);
+            });
+            
+            // Botón de tabla periódica
+            document.getElementById('periodic-table-btn').addEventListener('click', function() {
+                alert('Funcionalidad de tabla periódica en desarrollo. Mostraría los 118 elementos con información detallada.');
+            });
+            
+            // Hacer los átomos seleccionables para medir distancias
+            renderer.domElement.addEventListener('click', onAtomClick);
+        }
+
+        // Manejar clic en átomos
+        function onAtomClick(event) {
+            const mouse = new THREE.Vector2();
+            const rect = renderer.domElement.getBoundingClientRect();
+            
+            mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+            mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+            
+            const raycaster = new THREE.Raycaster();
+            raycaster.setFromCamera(mouse, camera);
+            
+            const intersects = raycaster.intersectObjects(moleculeGroup.children, true);
+            
+            if (intersects.length > 0) {
+                const object = intersects[0].object;
+                if (object.userData.selectable) {
+                    const atomIndex = object.userData.atomIndex;
+                    
+                    // Si ya está seleccionado, deseleccionar
+                    if (selectedAtoms.includes(atomIndex)) {
+                        selectedAtoms = selectedAtoms.filter(i => i !== atomIndex);
+                        object.material.emissive.setHex(0x000000);
+                    } else {
+                        // Si no está seleccionado, seleccionar (máximo 2)
+                        if (selectedAtoms.length < 2) {
+                            selectedAtoms.push(atomIndex);
+                            object.material.emissive.setHex(0x444444);
+                        } else {
+                            // Si ya hay 2 seleccionados, reemplazar el primero
+                            const firstAtom = moleculeGroup.children[selectedAtoms[0]];
+                            firstAtom.material.emissive.setHex(0x000000);
+                            selectedAtoms.shift();
+                            selectedAtoms.push(atomIndex);
+                            object.material.emissive.setHex(0x444444);
+                        }
+                    }
+                    
+                    // Si hay 2 átomos seleccionados, calcular y mostrar distancia
+                    if (selectedAtoms.length === 2) {
+                        calculateDistance();
+                    } else {
+                        document.getElementById('distance-info').style.display = 'none';
+                    }
+                }
+            }
+        }
+
+        // Calcular distancia entre átomos seleccionados
+        function calculateDistance() {
+            const molecule = molecules[currentMolecule];
+            const atom1 = molecule.atoms[selectedAtoms[0]];
+            const atom2 = molecule.atoms[selectedAtoms[1]];
+            
+            const pos1 = new THREE.Vector3(atom1.x, atom1.y, atom1.z);
+            const pos2 = new THREE.Vector3(atom2.x, atom2.y, atom2.z);
+            
+            const distance = pos1.distanceTo(pos2);
+            
+            document.getElementById('distance-value').textContent = distance.toFixed(3);
+            document.getElementById('distance-info').style.display = 'block';
+            
+            // Dibujar línea entre los átomos
+            if (distanceLine) {
+                moleculeGroup.remove(distanceLine);
+            }
+            
+            const lineGeometry = new THREE.BufferGeometry().setFromPoints([pos1, pos2]);
+            const lineMaterial = new THREE.LineBasicMaterial({ color: 0x00FF00 });
+            distanceLine = new THREE.Line(lineGeometry, lineMaterial);
+            moleculeGroup.add(distanceLine);
+        }
+
+        // Cargar botones de moléculas
+        function loadMoleculeButtons() {
+            const container = document.getElementById('molecule-buttons-container');
+            container.innerHTML = '';
+            
+            Object.keys(molecules).forEach(key => {
+                const molecule = molecules[key];
+                const button = document.createElement('button');
+                button.className = 'molecule-btn';
+                if (key === currentMolecule) button.classList.add('active');
+                button.setAttribute('data-molecule', key);
+                
+                button.innerHTML = `
+                    <div class="molecule-name">${molecule.name}</div>
+                    <div class="molecule-formula">${molecule.formula}</div>
+                `;
+                
+                button.addEventListener('click', function() {
+                    document.querySelectorAll('.molecule-btn').forEach(btn => {
+                        btn.classList.remove('active');
+                    });
+                    this.classList.add('active');
+                    
+                    currentMolecule = this.getAttribute('data-molecule');
+                    loadMolecule(currentMolecule);
+                });
+                
+                container.appendChild(button);
+            });
+        }
+
+        // Filtrar moléculas por búsqueda
+        function filterMolecules(searchTerm) {
+            const buttons = document.querySelectorAll('.molecule-btn');
+            const activeCategory = document.querySelector('.category-btn.active').getAttribute('data-category');
+            
+            buttons.forEach(button => {
+                const moleculeKey = button.getAttribute('data-molecule');
+                const molecule = molecules[moleculeKey];
+                const name = molecule.name.toLowerCase();
+                const formula = molecule.formula.toLowerCase();
+                const search = searchTerm.toLowerCase();
+                
+                const matchesSearch = name.includes(search) || formula.includes(search);
+                const matchesCategory = activeCategory === 'all' || molecule.category === activeCategory;
+                
+                if (matchesSearch && matchesCategory) {
+                    button.style.display = 'flex';
+                } else {
+                    button.style.display = 'none';
+                }
+            });
+        }
+
+        // Filtrar moléculas por categoría
+        function filterMoleculesByCategory(category) {
+            const searchTerm = document.getElementById('molecule-search').value;
+            filterMolecules(searchTerm);
+        }
+
+        // Ajustar tamaño de ventana
+        function onWindowResize() {
+            camera.aspect = document.getElementById('molecule-container').clientWidth / 
+                            document.getElementById('molecule-container').clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(
+                document.getElementById('molecule-container').clientWidth,
+                document.getElementById('molecule-container').clientHeight
+            );
+        }
+
+        // Animación
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            // Rotación automática
+            moleculeGroup.rotation.y += rotationSpeed;
+            
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        // Inicializar cuando se carga la página
+        window.onload = init;
+    </script>
+</body>
+</html>
